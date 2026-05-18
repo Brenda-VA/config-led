@@ -29,7 +29,21 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
+''' FLUJO DE CONFIGURACION
+selectedVariant
+  ↓
+cabinet_width_mm
+cabinet_height_mm
+resolution_per_cabinet
+weight
+power
+heat
+  ↓
+usuario cambia columns/rows
+  ↓
+Nuxt calcula visualmente
+  ↓
+Django puede recalcular al guardar'''
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -39,13 +53,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "rest_framework",
     "corsheaders",
-    "products",
+    "products.apps.ProductsConfig",
 ]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -125,3 +138,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+}
