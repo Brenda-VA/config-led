@@ -4,6 +4,8 @@ from django.utils.text import slugify
 
 
 class ProductFamily(models.Model):
+    # Modelo principal que el frontend muestra en el primer paso del configurador.
+    # Sus imagenes son rutas/claves de assets locales de Nuxt, no ficheros subidos a Django.
     INDOOR = "indoor"
     OUTDOOR = "outdoor"
 
@@ -47,6 +49,8 @@ class ProductFamily(models.Model):
 
 
 class ProductVariant(models.Model):
+    # Variante tecnica de una familia LED. El frontend usa estos datos para la tabla
+    # de seleccion y para calcular medidas, resolucion, peso, potencia y calor.
     family = models.ForeignKey(
         ProductFamily,
         related_name="variants",
@@ -97,6 +101,7 @@ class ProductVariant(models.Model):
 
 
 class Controller(models.Model):
+    # Controladores disponibles para una configuracion. El precio se oculta por API si el usuario no tiene permiso para ver precios.
     NOVASTAR = "novastar"
     COLORLIGHT = "colorlight"
     OTHER = "other"
@@ -121,6 +126,8 @@ class Controller(models.Model):
 
 
 class ConfigurationProject(models.Model):
+    # Configuracion guardada de un usuario: variante seleccionada + columnas/filas
+    # + opciones. Los campos calculated_* se derivan de ProductVariant.
     METERS = "m"
     FEET = "ft"
     UNIT_CHOICES = [
@@ -205,6 +212,8 @@ class ConfigurationProject(models.Model):
         return self.columns * self.rows
 
     def save(self, *args, **kwargs):
+        # Mantiene los calculos sincronizados tambien si el proyecto se edita
+        # desde admin, no solo cuando se crea por API.
         if self.selected_variant_id and self.columns and self.rows:
             from .services import calculate_project_metrics
 
@@ -221,6 +230,8 @@ class ConfigurationProject(models.Model):
 
 
 class UserProfile(models.Model):
+    # Extension simple del User de Django para permisos de negocio.
+    # Evita crear un CustomUser en esta fase inicial del proyecto.
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         related_name="price_profile",

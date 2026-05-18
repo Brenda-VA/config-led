@@ -6,4 +6,5 @@ class ProductsConfig(AppConfig):
     name = 'products'
 
     def ready(self):
+        # Carga signals.py al arrancar Django para crear UserProfile automaticamente.
         import products.signals  # noqa: F401

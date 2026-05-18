@@ -5,7 +5,7 @@ MM_PER_METER = Decimal("1000")
 
 
 def calculate_project_metrics(variant, columns, rows):
-    """Calculate display totals from cabinet-level technical data."""
+    """Calcula totales de pantalla a partir de datos de cabinet y columnas/filas."""
     columns = int(columns)
     rows = int(rows)
     total_cabinets = columns * rows
@@ -33,6 +33,7 @@ def calculate_project_metrics(variant, columns, rows):
 
 
 def user_can_view_prices(user):
+    # Punto unico de decision para precios: los serializers lo consultan antes de devolver JSON.
     if not user or not user.is_authenticated:
         return False
 

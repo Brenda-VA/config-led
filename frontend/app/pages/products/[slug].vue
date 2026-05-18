@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// Shape de cada variante anidada en GET /api/led-models/{slug}/.
 type ProductVariant = {
   id: number;
   model_name: string;
@@ -32,6 +33,8 @@ const {
 } = await useFetch<ProductFamilyDetail>(
   `http://127.0.0.1:8000/api/led-models/${route.params.slug}/`,
 );
+// route.params.slug decide que ProductFamily recupera Django; model.variants alimenta la tabla.
+// El precio puede venir como null si el usuario no tiene permiso can_view_prices.
 </script>
 
 <template>

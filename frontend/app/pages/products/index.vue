@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// Shape JSON que devuelve GET /api/led-models/ desde ProductFamilyListSerializer.
 type LedModel = {
   id: number;
   name: string;
@@ -18,6 +19,8 @@ const {
   pending,
   error,
 } = await useFetch<LedModel[]>("http://127.0.0.1:8000/api/led-models/");
+// Flujo: Nuxt llama a Django, DRF devuelve JSON y ledModels alimenta el v-for del template.
+// Cuando se pinten imagenes, main_image debe mapearse contra frontend/assets/leds/*.
 </script>
 
 <template>

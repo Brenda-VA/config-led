@@ -4,11 +4,15 @@ from django.core.management.base import BaseCommand
 
 from products.models import Controller, ProductFamily, ProductVariant
 
-
+'''este archivo me enseña de donde salieron los datos iniciales como:
+        - Inmersif pro
+        - variantes
+        - controladores                             '''
 class Command(BaseCommand):
     help = "Load demo LED configurator data for local development."
 
     def handle(self, *args, **options):
+        # Seed idempotente: update_or_create permite reejecutarlo sin duplicar registros.
         family, _ = ProductFamily.objects.update_or_create(
             slug="immersif-pro",
             defaults={

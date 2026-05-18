@@ -4,8 +4,9 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
 from .models import ConfigurationProject, Controller, ProductFamily, ProductVariant, UserProfile
 
-
+#archivo para gestionar los datos desde el panel de admin, aqui se cargan al panel manualmente
 class ProductVariantInline(admin.TabularInline):
+    # Permite crear/editar variantes directamente dentro de la familia LED.
     model = ProductVariant
     extra = 0
     fields = [
@@ -101,6 +102,7 @@ class ConfigurationProjectAdmin(admin.ModelAdmin):
 
 
 class UserProfileInline(admin.StackedInline):
+    # Muestra can_view_prices dentro del admin de User sin cambiar el modelo User.
     model = UserProfile
     can_delete = False
     extra = 0

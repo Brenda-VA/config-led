@@ -19,5 +19,6 @@ from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Todas las rutas /api/... se delegan a products/urls.py y sus ViewSets.
     path("api/", include("products.urls")),
 ]

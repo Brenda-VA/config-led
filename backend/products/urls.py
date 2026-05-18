@@ -1,26 +1,5 @@
 from rest_framework.routers import DefaultRouter
-#conecta rutas API con ViewSets
-''' FLUJO ACTUAL DEL PROYECTO
-Django Admin
-  ↓
-creas datos LED
-  ↓
-SQLite guarda:
-    ProductFamily
-    ProductVariant
-    Controller
-    UserProfile
-    ConfigurationProject
-  ↓
-DRF expone API
-  ↓
-Nuxt pide datos
-  ↓
-Nuxt muestra:
-    modal de modelos
-    tabla de variantes
-    configurador
-    especificaciones'''
+
 from .views import (
     ConfigurationProjectViewSet,
     ControllerViewSet,
@@ -29,6 +8,8 @@ from .views import (
 )
 
 router = DefaultRouter()
+#aqui vemos que url llama a que vista
+# El router convierte cada ViewSet en endpoints REST: list, detail, create, etc.
 router.register("led-models", ProductFamilyViewSet, basename="led-model")
 router.register("led-variants", ProductVariantViewSet, basename="led-variant")
 router.register("controllers", ControllerViewSet, basename="controller")

@@ -12,9 +12,12 @@ from .serializers import (
 
 
 class ProductFamilyViewSet(viewsets.ReadOnlyModelViewSet):
+    # Atiende /api/led-models/ y /api/led-models/{slug}/.
+    # En detalle cambia de serializer para incluir variantes.
     lookup_field = "slug"
 
     def get_queryset(self):
+        # Prefetch evita consultas extra cuando el detalle serializa variants.
         active_variants = ProductVariant.objects.filter(is_active=True).order_by(
             "display_order",
             "pixel_pitch",
@@ -33,6 +36,7 @@ class ProductFamilyViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ProductVariantViewSet(viewsets.ReadOnlyModelViewSet):
+    # Atiende /api/led-variants/. Permite filtrar por tipo o familia desde Nuxt.
     serializer_class = ProductVariantSerializer
 
     def get_queryset(self):
@@ -54,6 +58,7 @@ class ProductVariantViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ControllerViewSet(viewsets.ReadOnlyModelViewSet):
+    # Atiende /api/controllers/. Los precios los protege ControllerSerializer.
     serializer_class = ControllerSerializer
 
     def get_queryset(self):
@@ -61,6 +66,8 @@ class ControllerViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ConfigurationProjectViewSet(viewsets.ModelViewSet):
+    # Atiende /api/projects/. Es el unico endpoint actual que requiere login
+    # porque cada configuracion pertenece a un usuario.
     serializer_class = ConfigurationProjectSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -77,6 +84,7 @@ class ConfigurationProjectViewSet(viewsets.ModelViewSet):
         )
 
         user = self.request.user
+        # Staff puede revisar todos los proyectos; usuarios normales solo ven los suyos.
         if user.is_staff or user.is_superuser:
             return queryset
         return queryset.filter(user=user)

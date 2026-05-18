@@ -5,6 +5,8 @@ from .services import calculate_project_metrics, user_can_view_prices
 
 
 class PriceProtectedSerializerMixin:
+    # Este mixin se reutiliza en serializers con precios. Convierte el modelo a JSON
+    # normalmente, pero sustituye los campos de precio por null si el request no tiene permiso.
     price_fields = ()
 
     def can_view_prices(self):
@@ -21,6 +23,8 @@ class PriceProtectedSerializerMixin:
 
 
 class ProductVariantSerializer(PriceProtectedSerializerMixin, serializers.ModelSerializer):
+    # JSON de una variante LED. Incluye datos de su familia para que Nuxt no necesite
+    # hacer otra peticion solo para saber el tipo indoor/outdoor o el slug del modelo.
     family_name = serializers.CharField(source="family.name", read_only=True)
     family_slug = serializers.CharField(source="family.slug", read_only=True)
     product_type = serializers.CharField(source="family.product_type", read_only=True)
@@ -59,6 +63,7 @@ class ProductVariantSerializer(PriceProtectedSerializerMixin, serializers.ModelS
 
 
 class ProductFamilyListSerializer(serializers.ModelSerializer):
+    # Respuesta ligera para /api/led-models/: suficiente para pintar tarjetas/listados.
     variants_count = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -79,6 +84,7 @@ class ProductFamilyListSerializer(serializers.ModelSerializer):
 
 
 class ProductFamilyDetailSerializer(ProductFamilyListSerializer):
+    # Respuesta completa para /api/led-models/{slug}/: familia + variantes anidadas.
     variants = ProductVariantSerializer(many=True, read_only=True)
 
     class Meta(ProductFamilyListSerializer.Meta):
@@ -86,6 +92,7 @@ class ProductFamilyDetailSerializer(ProductFamilyListSerializer):
 
 
 class ControllerSerializer(PriceProtectedSerializerMixin, serializers.ModelSerializer):
+    # Los controladores tambien pasan por el mixin porque su precio es sensible.
     price_fields = ("price",)
 
     class Meta:
@@ -101,6 +108,8 @@ class ControllerSerializer(PriceProtectedSerializerMixin, serializers.ModelSeria
 
 
 class ConfigurationProjectSerializer(serializers.ModelSerializer):
+    # Serializer de lectura/escritura para proyectos guardados. El cliente envia
+    # selected_variant, columnas y filas; Django rellena los calculated_*.
     selected_variant_detail = ProductVariantSerializer(source="selected_variant", read_only=True)
     controller_detail = ControllerSerializer(source="controller", read_only=True)
     total_cabinets = serializers.IntegerField(read_only=True)
@@ -168,6 +177,8 @@ class ConfigurationProjectSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        # El usuario no viene del JSON: viene de request.user porque el endpoint
+        # de proyectos exige autenticacion.
         request = self.context.get("request")
         user = getattr(request, "user", None)
 
@@ -182,6 +193,7 @@ class ConfigurationProjectSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
+        # Si cambian variante, columnas o filas, se recalculan los totales antes de guardar.
         selected_variant = validated_data.get("selected_variant", instance.selected_variant)
         columns = validated_data.get("columns", instance.columns)
         rows = validated_data.get("rows", instance.rows)

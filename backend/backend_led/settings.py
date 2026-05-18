@@ -29,21 +29,6 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-''' FLUJO DE CONFIGURACION
-selectedVariant
-  ↓
-cabinet_width_mm
-cabinet_height_mm
-resolution_per_cabinet
-weight
-power
-heat
-  ↓
-usuario cambia columns/rows
-  ↓
-Nuxt calcula visualmente
-  ↓
-Django puede recalcular al guardar'''
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -51,12 +36,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # DRF expone modelos Django como JSON para Nuxt.
     "rest_framework",
+    # Permite peticiones del dev server de Nuxt a Django en local.
     "corsheaders",
+    # Usa ProductsConfig para activar signals.py.
     "products.apps.ProductsConfig",
 ]
 
 MIDDLEWARE = [
+    # Debe ir arriba para que las respuestas API incluyan cabeceras CORS.
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -93,6 +82,7 @@ WSGI_APPLICATION = 'backend_led.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
+        # Base de datos local de desarrollo. Admin, API y seed escriben aqui.
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
@@ -135,11 +125,13 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 CORS_ALLOWED_ORIGINS = [
+    # Origenes desde los que Nuxt puede llamar a /api/ durante desarrollo.
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
 REST_FRAMEWORK = {
+    # Session auth sirve para probar desde admin/browser; Basic auth ayuda en desarrollo.
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",

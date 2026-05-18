@@ -1,0 +1,100 @@
+models.py       → qué datos existen
+serializers.py  → cómo se transforman a JSON
+views.py        → qué endpoint usa qué serializer
+urls.py         → qué ruta llama a qué viewset
+services.py     → dónde se calculan medidas
+admin.py        → cómo se gestionan datos desde admin
+signals.py      → automatismos
+settings.py     → apps instaladas, CORS, DRF
+frontend        → cómo Nuxt consume Django
+
+===================== FLUJO COMPLETO =====================
+Nuxt page
+  -> useFetch("http://127.0.0.1:8000/api/...")
+  -> Django backend_led/urls.py
+  -> products/urls.py
+  -> ViewSet en products/views.py
+  -> Serializer en products/serializers.py
+  -> Model en products/models.py
+  -> SQLite db.sqlite3
+  -> Serializer convierte modelo a JSON
+  -> Nuxt recibe data/pending/error
+  -> template pinta modelos o variantes
+
+
+===================== Endpoints Actuales =====================
+|           Endpoint            |              ViewSet          |       Serializer principal        |                   Uso               |
+|-------------------------------|-------------------------------|-----------------------------------|-------------------------------------|
+| `GET /api/led-models/`        | `ProductFamilyViewSet`        | `ProductFamilyListSerializer`     | Listado de modelos LED              |
+| `GET /api/led-models/{slug}/` | `ProductFamilyViewSet`        | `ProductFamilyDetailSerializer`   | Detalle + variantes                 |
+| `GET /api/led-variants/`      | `ProductVariantViewSet`       | `ProductVariantSerializer`        | Variantes filtrables                |
+| `GET /api/controllers/`       | `ControllerViewSet`           | `ControllerSerializer`            | Controladores                       |
+| `GET/POST /api/projects/`     | `ConfigurationProjectViewSet` | `ConfigurationProjectSerializer`  | Proyectos guardados, requiere login |
+| `GET /api/products/`          | `ProductVariantViewSet`       | `ProductVariantSerializer`        | Alias temporal legacy               |
+
+
+========================================== Archivos Modificados ==========================================
+- [settings.py](/Users/synetech/config-led/backend/backend_led/settings.py)
+- [urls.py backend](/Users/synetech/config-led/backend/backend_led/urls.py)
+- [models.py](/Users/synetech/config-led/backend/products/models.py)
+- [serializers.py](/Users/synetech/config-led/backend/products/serializers.py)
+- [views.py](/Users/synetech/config-led/backend/products/views.py)
+- [urls.py products](/Users/synetech/config-led/backend/products/urls.py)
+- [services.py](/Users/synetech/config-led/backend/products/services.py)
+- [admin.py](/Users/synetech/config-led/backend/products/admin.py)
+- [apps.py](/Users/synetech/config-led/backend/products/apps.py)
+- [signals.py](/Users/synetech/config-led/backend/products/signals.py)
+- [seed_led_demo_data.py](/Users/synetech/config-led/backend/products/management/commands/seed_led_demo_data.py)
+- [app.vue](/Users/synetech/config-led/frontend/app/app.vue)
+- [index.vue](/Users/synetech/config-led/frontend/app/pages/index.vue)
+- [products/index.vue](/Users/synetech/config-led/frontend/app/pages/products/index.vue)
+- [[slug].vue](/Users/synetech/config-led/frontend/app/pages/products/[slug].vue)
+- [nuxt.config.ts](/Users/synetech/config-led/frontend/nuxt.config.ts)
+
+
+========================================== Dependencias Importantes ==========================================
+- `ProductVariant` depende de `ProductFamily`.
+- `ConfigurationProject` depende de `User`, `ProductVariant` y opcionalmente `Controller`.
+- `UserProfile` depende de `User` y guarda `can_view_prices`.
+- `serializers.py` controla qué sale como JSON y oculta precios.
+- `views.py` decide qué queryset atiende cada endpoint.
+- `services.py` centraliza cálculos y permiso de precios.
+- `signals.py` crea `UserProfile` automáticamente.
+- Nuxt consume ahora:
+  - `/api/led-models/` en `products/index.vue`
+  - `/api/led-models/{slug}/` en `products/[slug].vue`
+
+======================= SI LO QUIERO ESTUDIAR: =======================
+1. backend_led/settings.py
+2. backend_led/urls.py
+3. products/urls.py
+4. products/models.py
+5. products/services.py
+6. products/serializers.py
+7. products/views.py
+8. products/admin.py
+9. products/apps.py
+10. products/signals.py
+11. products/management/commands/seed_led_demo_data.py
+12. frontend/app/app.vue
+13. frontend/app/pages/index.vue
+14. frontend/app/pages/products/index.vue
+15. frontend/app/pages/products/[slug].vue
+16. frontend/nuxt.config.ts
+
+La idea mental es esta:
+settings.py activa la app
+↓
+urls.py recibe la ruta
+↓
+views.py decide qué datos buscar
+↓
+models.py define esos datos
+↓
+serializers.py los convierte a JSON
+↓
+Nuxt los recibe
+↓
+Vue los pinta
+
+Aunque para estudiar, lee primero models.py antes que views.py, porque si no sabes qué datos existen, las views no se entienden bien.
