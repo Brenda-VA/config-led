@@ -1,6 +1,12 @@
-import type { LedModel, LedModelDetail } from "~/types/led";
+import type {
+  LedController,
+  LedModel,
+  LedModelDetail,
+  SavedProjectResponse,
+  SaveProjectPayload,
+} from "~/types/led";
 
-// Punto unico para construir URLs contra la API Django.
+// Todas las llamadas a Django viven aqui para no repetir URLs por la app.
 export const useLedApi = () => {
   const config = useRuntimeConfig();
   const apiBase = config.public.apiBase;
@@ -17,9 +23,23 @@ export const useLedApi = () => {
     return $fetch<LedModelDetail>(`${apiBase}/led-models/${slug}/`);
   };
 
+  const getControllers = () => {
+    return useFetch<LedController[]>(`${apiBase}/controllers/`);
+  };
+
+  const saveProject = (payload: SaveProjectPayload) => {
+    return $fetch<SavedProjectResponse>(`${apiBase}/projects/`, {
+      method: "POST",
+      body: payload,
+      credentials: "include",
+    });
+  };
+
   return {
     getLedModels,
     getLedModelDetail,
     fetchLedModelDetail,
+    getControllers,
+    saveProject,
   };
 };

@@ -4,13 +4,15 @@ import previewVideoSrc from "../../../assets/recursos/preview-video.webm";
 import type {
   ConfigUnit,
   ContentMode,
+  LedController,
   LedModel,
   LedVariant,
   RedundancyMode,
   ResolutionMode,
 } from "~/types/led";
 
-defineProps<{
+// La sidebar no guarda el estado final; solo emite cambios hacia la pagina padre.
+const props = defineProps<{
   selectedModel: LedModel | null;
   selectedVariant: LedVariant | null;
   modelImageSrc: string;
@@ -22,6 +24,13 @@ defineProps<{
   resolutionMode: ResolutionMode;
   redundancy: RedundancyMode;
   contentMode: ContentMode;
+  controllers: LedController[];
+  controllersLoading: boolean;
+  controllersError: boolean;
+  selectedController: LedController | null;
+  controllerQuantity: number;
+  saveStatus: "idle" | "saving" | "success" | "error";
+  saveMessage: string;
 }>();
 
 const emit = defineEmits<{
@@ -34,6 +43,9 @@ const emit = defineEmits<{
   (event: "update:resolutionMode", value: ResolutionMode): void;
   (event: "update:redundancy", value: RedundancyMode): void;
   (event: "update:contentMode", value: ContentMode): void;
+  (event: "update:selectedController", value: LedController | null): void;
+  (event: "update:controllerQuantity", value: number): void;
+  (event: "exportPdf"): void;
 }>();
 
 const formatCabinetSize = (variant: LedVariant | null) => {
@@ -59,6 +71,63 @@ const readNumberInput = (event: Event, fallback: number, minimum = 0) => {
 
 const readIntegerInput = (event: Event, fallback: number) => {
   return Math.max(1, Math.round(readNumberInput(event, fallback, 1)));
+};
+
+const availableControllerBrands = computed(() => {
+  return Array.from(new Set(props.controllers.map((controller) => controller.brand)));
+});
+
+const activeControllerBrand = computed(() => {
+  return props.selectedController?.brand ?? availableControllerBrands.value[0] ?? "";
+});
+
+const controllersByActiveBrand = computed(() => {
+  return props.controllers.filter((controller) => controller.brand === activeControllerBrand.value);
+});
+
+const formatBrand = (brand: string) => {
+  if (!brand) {
+    return "-";
+  }
+
+  return brand.charAt(0).toUpperCase() + brand.slice(1);
+};
+
+const formatPrice = (price: string | null) => {
+  if (!price) {
+    return "-";
+  }
+
+  return Number(price).toLocaleString(undefined, {
+    style: "currency",
+    currency: "EUR",
+  });
+};
+
+const selectedControllerTotalPrice = computed(() => {
+  if (!props.selectedController?.price) {
+    return "-";
+  }
+
+  return formatPrice(String(Number(props.selectedController.price) * props.controllerQuantity));
+});
+
+const selectControllerBrand = (event: Event) => {
+  const input = event.target as HTMLSelectElement;
+  const firstControllerForBrand =
+    props.controllers.find((controller) => controller.brand === input.value) ?? null;
+
+  emit("update:selectedController", firstControllerForBrand);
+};
+
+const selectController = (event: Event) => {
+  const input = event.target as HTMLSelectElement;
+  const controllerId = Number(input.value);
+
+  emit(
+    "update:selectedController",
+    props.controllers.find((controller) => controller.id === controllerId) ?? null,
+  );
 };
 </script>
 
@@ -325,13 +394,96 @@ const readIntegerInput = (event: Event, fallback: number) => {
 
     <section class="rounded-xl bg-white p-5 shadow-lg shadow-neutral-200/70">
       <h2 class="text-2xl font-black tracking-normal">Controller</h2>
-      <p class="mt-3 text-sm font-semibold text-neutral-400">No controller selected</p>
+
+      <p v-if="controllersLoading" class="mt-3 text-sm font-semibold text-neutral-400">
+        Loading controllers...
+      </p>
+      <p v-else-if="controllersError" class="mt-3 text-sm font-semibold text-red-600">
+        Controllers could not be loaded.
+      </p>
+      <p v-else-if="!controllers.length" class="mt-3 text-sm font-semibold text-neutral-400">
+        No controllers available.
+      </p>
+
+      <div v-else class="mt-4 space-y-4 text-sm">
+        <label class="block">
+          <span class="mb-2 block font-semibold text-neutral-500">Brand</span>
+          <select
+            class="h-10 w-full rounded border border-neutral-300 px-3"
+            :value="activeControllerBrand"
+            :disabled="!selectedVariant"
+            @change="selectControllerBrand"
+          >
+            <option
+              v-for="brand in availableControllerBrands"
+              :key="brand"
+              :value="brand"
+            >
+              {{ formatBrand(brand) }}
+            </option>
+          </select>
+        </label>
+
+        <label class="block">
+          <span class="mb-2 block font-semibold text-neutral-500">Controller</span>
+          <select
+            class="h-10 w-full rounded border border-neutral-300 px-3"
+            :value="selectedController?.id ?? ''"
+            :disabled="!selectedVariant"
+            @change="selectController"
+          >
+            <option value="">Select controller</option>
+            <option
+              v-for="controller in controllersByActiveBrand"
+              :key="controller.id"
+              :value="controller.id"
+            >
+              {{ controller.name }} · {{ formatPrice(controller.price) }}
+            </option>
+          </select>
+        </label>
+
+        <label class="flex items-center justify-between gap-4">
+          <span class="font-semibold text-neutral-500">Quantity</span>
+          <input
+            type="number"
+            :value="controllerQuantity"
+            min="1"
+            step="1"
+            class="h-9 w-16 rounded border border-neutral-300 px-2 text-right"
+            :disabled="!selectedVariant"
+            @input="emit('update:controllerQuantity', readIntegerInput($event, controllerQuantity))"
+          >
+        </label>
+
+        <p class="font-semibold text-neutral-500">
+          Controller total:
+          <span class="text-neutral-950">{{ selectedControllerTotalPrice }}</span>
+        </p>
+      </div>
     </section>
 
     <section class="rounded-xl bg-white p-5 shadow-lg shadow-neutral-200/70">
       <h2 class="text-2xl font-black tracking-normal">LED Display Price</h2>
       <p class="mt-3 text-sm font-semibold text-neutral-400">
         {{ selectedVariant?.web_price_per_cabinet ?? "-" }}
+      </p>
+
+      <button
+        type="button"
+        class="mt-5 h-12 w-full rounded-full bg-blue-600 px-5 text-sm font-semibold text-white disabled:bg-neutral-300"
+        :disabled="!selectedVariant || saveStatus === 'saving'"
+        @click="emit('exportPdf')"
+      >
+        {{ saveStatus === "saving" ? "Saving..." : "Export PDF" }}
+      </button>
+
+      <p
+        v-if="saveMessage"
+        class="mt-3 text-sm font-semibold"
+        :class="saveStatus === 'success' ? 'text-green-600' : 'text-red-600'"
+      >
+        {{ saveMessage }}
       </p>
     </section>
   </div>

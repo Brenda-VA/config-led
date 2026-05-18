@@ -3,6 +3,9 @@ export type ConfigUnit = "meters" | "feet";
 export type ResolutionMode = "FHD" | "UHD" | null;
 export type RedundancyMode = "NO" | "POWER" | "DATA";
 export type ContentMode = "default" | "preview" | "upload" | "none";
+export type BackendUnit = "m" | "ft";
+export type BackendRedundancyMode = "none" | "power" | "data";
+export type BackendContentMode = "default_image" | "preview_video" | "upload_image" | "no_image";
 
 export type LedModel = {
   id: number;
@@ -50,6 +53,7 @@ export type LedController = {
   name: string;
   price: string | null;
   is_active: boolean;
+  display_order: number;
 };
 
 export type ConfiguratorState = {
@@ -65,4 +69,39 @@ export type ConfiguratorState = {
   selectedVariant: LedVariant | null;
   selectedController: LedController | null;
   controllerQuantity: number;
+};
+
+export type SaveProjectPayload = {
+  name: string;
+  selected_variant: number;
+  controller?: number | null;
+  wall_width_m: string;
+  wall_height_m: string;
+  columns: number;
+  rows: number;
+  unit: BackendUnit;
+  resolution_preset: string;
+  redundancy: BackendRedundancyMode;
+  content_mode: BackendContentMode;
+  custom_image_path?: string;
+};
+
+export type SavedProjectResponse = SaveProjectPayload & {
+  id: number;
+  selected_variant_detail: LedVariant;
+  controller_detail: LedController | null;
+  calculated_width_m: string;
+  calculated_height_m: string;
+  calculated_area_m2: string;
+  calculated_resolution_width: number;
+  calculated_resolution_height: number;
+  calculated_total_pixels: number;
+  calculated_weight_kg: string;
+  calculated_max_power_w: string;
+  calculated_typical_power_w: string;
+  calculated_max_heat_btu_h: string;
+  calculated_typical_heat_btu_h: string;
+  total_cabinets: number;
+  created_at: string;
+  updated_at: string;
 };
