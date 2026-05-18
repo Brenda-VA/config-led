@@ -8,18 +8,18 @@
       </NuxtLink>
 
       <div class="flex items-center gap-3">
-        <button
-          type="button"
-          class="h-10 rounded-full border border-blue-600 px-5 text-sm font-semibold text-blue-700"
+        <NuxtLink
+          to="/login"
+          class="flex h-10 items-center rounded-full border border-blue-600 px-5 text-sm font-semibold text-blue-700"
         >
           Sign in
-        </button>
-        <button
-          type="button"
-          class="h-10 rounded-full bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm"
+        </NuxtLink>
+        <NuxtLink
+          to="/register"
+          class="flex h-10 items-center rounded-full bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm"
         >
           Register
-        </button>
+        </NuxtLink>
       </div>
     </header>
 
