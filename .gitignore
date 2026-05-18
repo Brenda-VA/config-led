@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+
+# Django local env
+.env
+
+# Node / Nuxt
+node_modules/
+.nuxt/
+.output/
+dist/
+
+# macOS
+.DS_Store
