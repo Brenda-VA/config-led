@@ -1,5 +1,6 @@
 import type { LedModel, LedModelDetail } from "~/types/led";
-//esto evita repetir http://127.0.0.1:8000/api
+
+// Punto unico para construir URLs contra la API Django.
 export const useLedApi = () => {
   const config = useRuntimeConfig();
   const apiBase = config.public.apiBase;
@@ -12,8 +13,13 @@ export const useLedApi = () => {
     return useFetch<LedModelDetail>(`${apiBase}/led-models/${slug}/`);
   };
 
+  const fetchLedModelDetail = (slug: string) => {
+    return $fetch<LedModelDetail>(`${apiBase}/led-models/${slug}/`);
+  };
+
   return {
     getLedModels,
     getLedModelDetail,
+    fetchLedModelDetail,
   };
 };

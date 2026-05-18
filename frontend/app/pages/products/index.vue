@@ -1,53 +1,69 @@
 <script setup lang="ts">
-// Shape JSON que devuelve GET /api/led-models/ desde ProductFamilyListSerializer.
-type LedModel = {
-  id: number;
-  name: string;
-  slug: string;
-  product_type: "indoor" | "outdoor";
-  subtitle: string;
-  description: string;
-  main_image: string;
-  thumbnail_image: string;
-  variants_count: number;
-  is_active: boolean;
-  display_order: number;
+import type { LedModel, LedVariant } from "~/types/led";
+
+const { getLedModels } = useLedApi();
+const { resolveLedImage } = useLedImages();
+
+// Django API -> useLedApi -> esta pagina -> modal -> seleccion local -> sidebar/preview.
+const { data: ledModels, pending, error } = await getLedModels();
+
+const isModelModalOpen = ref(false);
+const selectedModel = ref<LedModel | null>(null);
+const selectedVariant = ref<LedVariant | null>(null);
+
+const models = computed(() => ledModels.value ?? []);
+const modelImageSrc = computed(() =>
+  resolveLedImage(selectedModel.value?.main_image || selectedModel.value?.thumbnail_image),
+);
+
+const openModelModal = () => {
+  isModelModalOpen.value = true;
 };
 
-const {
-  data: ledModels,
-  pending,
-  error,
-} = await useFetch<LedModel[]>("http://127.0.0.1:8000/api/led-models/");
-// Flujo: Nuxt llama a Django, DRF devuelve JSON y ledModels alimenta el v-for del template.
-// Cuando se pinten imagenes, main_image debe mapearse contra frontend/assets/leds/*.
+const closeModelModal = () => {
+  isModelModalOpen.value = false;
+};
+
+const confirmModelSelection = (payload: { model: LedModel; variant: LedVariant }) => {
+  selectedModel.value = payload.model;
+  selectedVariant.value = payload.variant;
+  isModelModalOpen.value = false;
+};
+
+const resetConfiguration = () => {
+  selectedModel.value = null;
+  selectedVariant.value = null;
+};
 </script>
 
 <template>
-  <main class="p-8">
-    <h1 class="text-3xl font-bold">Configurador LED</h1>
+  <ConfiguratorShell>
+    <WallPreview
+      :selected-variant="selectedVariant"
+      @start-config="openModelModal"
+      @reset="resetConfiguration"
+    />
 
-    <p class="mt-2 text-gray-600">Modelos LED cargados desde Django.</p>
+    <template #sidebar>
+      <ConfigSidebar
+        :selected-model="selectedModel"
+        :selected-variant="selectedVariant"
+        :model-image-src="modelImageSrc"
+        @change-model="openModelModal"
+      />
+    </template>
 
-    <p v-if="pending" class="mt-6">Cargando modelos...</p>
+    <template #bottom>
+      <SpecificationsPanel :selected-variant="selectedVariant" />
+    </template>
+  </ConfiguratorShell>
 
-    <p v-else-if="error" class="mt-6 text-red-600">Error al cargar modelos.</p>
-
-    <ul v-else class="mt-6 space-y-4">
-      <li
-        v-for="model in ledModels"
-        :key="model.id"
-        class="rounded-xl border p-4"
-      >
-        <h2 class="text-xl font-semibold">
-          {{ model.name }}
-        </h2>
-
-        <p>Tipo: {{ model.product_type }}</p>
-        <p>{{ model.subtitle }}</p>
-        <p>Variantes: {{ model.variants_count }}</p>
-        <p>Imagen backend: {{ model.main_image }}</p>
-      </li>
-    </ul>
-  </main>
+  <ModelSelectorModal
+    v-if="isModelModalOpen"
+    :models="models"
+    :loading="pending"
+    :has-error="Boolean(error)"
+    @close="closeModelModal"
+    @confirm="confirmModelSelection"
+  />
 </template>
