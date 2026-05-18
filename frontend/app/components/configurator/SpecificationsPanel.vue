@@ -1,20 +1,43 @@
 <script setup lang="ts">
-import type { LedVariant } from "~/types/led";
+import type { LedVariant, RedundancyMode } from "~/types/led";
 
 const props = defineProps<{
   selectedVariant: LedVariant | null;
+  columns: number;
+  rows: number;
+  redundancy: RedundancyMode;
 }>();
 
-const totalPixels = computed(() => {
+const calculations = useLedCalculations({
+  selectedVariant: toRef(props, "selectedVariant"),
+  columns: toRef(props, "columns"),
+  rows: toRef(props, "rows"),
+});
+
+const formatNumber = (value: number, digits = 0) => {
   if (!props.selectedVariant) {
     return "-";
   }
 
-  return (
-    props.selectedVariant.resolution_width_px_per_cabinet *
-    props.selectedVariant.resolution_height_px_per_cabinet
-  ).toLocaleString();
-});
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits,
+  });
+};
+
+const formatUnitValue = (value: number, unit: string, digits = 0) => {
+  if (!props.selectedVariant) {
+    return "-";
+  }
+
+  return `${formatNumber(value, digits)} ${unit}`;
+};
+
+const formatMeters = (value: number) => formatUnitValue(value, "m", 2);
+const formatArea = (value: number) => formatUnitValue(value, "m2", 2);
+const formatWeight = (value: number) => formatUnitValue(value, "kg", 1);
+const formatPower = (value: number) => formatUnitValue(value, "W");
+const formatHeat = (value: number) => formatUnitValue(value, "BTU/h");
 </script>
 
 <template>
@@ -42,11 +65,52 @@ const totalPixels = computed(() => {
 
       <dl class="mt-5 space-y-3 text-sm">
         <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">Screen Configuration</dt>
+          <dd class="font-semibold">
+            {{ selectedVariant ? `${calculations.columns.value} x ${calculations.rows.value}` : "-" }}
+          </dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">No. of Cabinets</dt>
+          <dd class="font-semibold">
+            {{ selectedVariant ? calculations.totalCabinets.value : "-" }}
+          </dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">Dimensions</dt>
+          <dd class="font-semibold">
+            <template v-if="selectedVariant">
+              {{ formatMeters(calculations.displayWidthM.value) }} x
+              {{ formatMeters(calculations.displayHeightM.value) }}
+            </template>
+            <template v-else>-</template>
+          </dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">Display Area</dt>
+          <dd class="font-semibold">{{ formatArea(calculations.displayAreaM2.value) }}</dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">Diagonal</dt>
+          <dd class="font-semibold">
+            {{ selectedVariant ? `${formatNumber(calculations.diagonalInches.value, 1)} in` : "-" }}
+          </dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">Weight</dt>
+          <dd class="font-semibold">{{ formatWeight(calculations.totalWeightKg.value) }}</dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
           <dt class="font-semibold text-neutral-500">Resolution</dt>
           <dd class="font-semibold">
             <template v-if="selectedVariant">
-              {{ selectedVariant.resolution_width_px_per_cabinet }} x
-              {{ selectedVariant.resolution_height_px_per_cabinet }}
+              {{ calculations.resolutionWidth.value }} x {{ calculations.resolutionHeight.value }}
             </template>
             <template v-else>-</template>
           </dd>
@@ -54,21 +118,37 @@ const totalPixels = computed(() => {
 
         <div class="flex justify-between gap-4">
           <dt class="font-semibold text-neutral-500">Total pixel quantity</dt>
-          <dd class="font-semibold">{{ totalPixels }}</dd>
+          <dd class="font-semibold">{{ formatNumber(calculations.totalPixels.value) }}</dd>
         </div>
 
         <div class="flex justify-between gap-4">
-          <dt class="font-semibold text-neutral-500">Max power</dt>
-          <dd class="font-semibold">
-            {{ selectedVariant ? `${selectedVariant.max_power_w} W` : "-" }}
-          </dd>
+          <dt class="font-semibold text-neutral-500">Redundancy</dt>
+          <dd class="font-semibold">{{ selectedVariant ? redundancy : "-" }}</dd>
         </div>
 
         <div class="flex justify-between gap-4">
-          <dt class="font-semibold text-neutral-500">Typical power</dt>
-          <dd class="font-semibold">
-            {{ selectedVariant ? `${selectedVariant.typical_power_w} W` : "-" }}
-          </dd>
+          <dt class="font-semibold text-neutral-500">4K Controllers</dt>
+          <dd class="font-semibold">{{ selectedVariant ? calculations.controllers4k.value : "-" }}</dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">Power Requirements Max</dt>
+          <dd class="font-semibold">{{ formatPower(calculations.maxPowerW.value) }}</dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">Power Requirements Typical</dt>
+          <dd class="font-semibold">{{ formatPower(calculations.typicalPowerW.value) }}</dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">Heat Generation Max</dt>
+          <dd class="font-semibold">{{ formatHeat(calculations.maxHeatBtuH.value) }}</dd>
+        </div>
+
+        <div class="flex justify-between gap-4">
+          <dt class="font-semibold text-neutral-500">Heat Generation Typical</dt>
+          <dd class="font-semibold">{{ formatHeat(calculations.typicalHeatBtuH.value) }}</dd>
         </div>
       </dl>
     </section>

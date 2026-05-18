@@ -1,4 +1,8 @@
 export type ProductType = "indoor" | "outdoor";
+export type ConfigUnit = "meters" | "feet";
+export type ResolutionMode = "FHD" | "UHD" | null;
+export type RedundancyMode = "NO" | "POWER" | "DATA";
+export type ContentMode = "default" | "preview" | "upload" | "none";
 
 export type LedModel = {
   id: number;
@@ -38,4 +42,27 @@ export type LedVariant = {
 
 export type LedModelDetail = LedModel & {
   variants: LedVariant[];
+};
+
+export type LedController = {
+  id: number;
+  brand: string;
+  name: string;
+  price: string | null;
+  is_active: boolean;
+};
+
+export type ConfiguratorState = {
+  wallWidth: number;
+  wallHeight: number;
+  unit: ConfigUnit;
+  columns: number;
+  rows: number;
+  resolutionMode: ResolutionMode;
+  redundancy: RedundancyMode;
+  contentMode: ContentMode;
+  selectedModel: LedModel | null;
+  selectedVariant: LedVariant | null;
+  selectedController: LedController | null;
+  controllerQuantity: number;
 };

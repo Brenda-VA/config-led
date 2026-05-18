@@ -1,14 +1,39 @@
 <script setup lang="ts">
-import type { LedModel, LedVariant } from "~/types/led";
+import previewImageSrc from "../../../assets/recursos/preview-imagen.png";
+import previewVideoSrc from "../../../assets/recursos/preview-video.webm";
+import type {
+  ConfigUnit,
+  ContentMode,
+  LedModel,
+  LedVariant,
+  RedundancyMode,
+  ResolutionMode,
+} from "~/types/led";
 
 defineProps<{
   selectedModel: LedModel | null;
   selectedVariant: LedVariant | null;
   modelImageSrc: string;
+  wallWidth: number;
+  wallHeight: number;
+  unit: ConfigUnit;
+  columns: number;
+  rows: number;
+  resolutionMode: ResolutionMode;
+  redundancy: RedundancyMode;
+  contentMode: ContentMode;
 }>();
 
 const emit = defineEmits<{
-  (event: "change-model"): void;
+  (event: "requestModelChange"): void;
+  (event: "update:wallWidth", value: number): void;
+  (event: "update:wallHeight", value: number): void;
+  (event: "update:unit", value: ConfigUnit): void;
+  (event: "update:columns", value: number): void;
+  (event: "update:rows", value: number): void;
+  (event: "update:resolutionMode", value: ResolutionMode): void;
+  (event: "update:redundancy", value: RedundancyMode): void;
+  (event: "update:contentMode", value: ContentMode): void;
 }>();
 
 const formatCabinetSize = (variant: LedVariant | null) => {
@@ -20,6 +45,21 @@ const formatCabinetSize = (variant: LedVariant | null) => {
     variant.cabinet_depth_mm ?? "-"
   } mm`;
 };
+
+const readNumberInput = (event: Event, fallback: number, minimum = 0) => {
+  const input = event.target as HTMLInputElement;
+  const parsedValue = Number(input.value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return fallback;
+  }
+
+  return Math.max(minimum, parsedValue);
+};
+
+const readIntegerInput = (event: Event, fallback: number) => {
+  return Math.max(1, Math.round(readNumberInput(event, fallback, 1)));
+};
 </script>
 
 <template>
@@ -28,7 +68,7 @@ const formatCabinetSize = (variant: LedVariant | null) => {
       <button
         type="button"
         class="flex w-full items-start justify-between gap-4 text-left"
-        @click="emit('change-model')"
+        @click="emit('requestModelChange')"
       >
         <div>
           <h2 class="text-3xl font-black tracking-normal">Model</h2>
@@ -81,11 +121,23 @@ const formatCabinetSize = (variant: LedVariant | null) => {
           <p class="mb-3 font-semibold text-neutral-500">Unit</p>
           <div class="flex items-center justify-between gap-4">
             <label class="flex items-center gap-2">
-              <input type="radio" checked class="h-5 w-5" :disabled="!selectedVariant">
+              <input
+                type="radio"
+                class="h-5 w-5"
+                :checked="unit === 'meters'"
+                :disabled="!selectedVariant"
+                @change="emit('update:unit', 'meters')"
+              >
               <span>Meters</span>
             </label>
             <label class="flex items-center gap-2">
-              <input type="radio" class="h-5 w-5" :disabled="!selectedVariant">
+              <input
+                type="radio"
+                class="h-5 w-5"
+                :checked="unit === 'feet'"
+                :disabled="!selectedVariant"
+                @change="emit('update:unit', 'feet')"
+              >
               <span>Feet</span>
             </label>
           </div>
@@ -95,9 +147,12 @@ const formatCabinetSize = (variant: LedVariant | null) => {
           <span class="font-semibold text-neutral-500">Wall Width</span>
           <input
             type="number"
-            value="5"
+            :value="wallWidth"
+            min="0.1"
+            step="0.1"
             class="h-9 w-16 rounded border border-neutral-300 px-2 text-right"
             :disabled="!selectedVariant"
+            @input="emit('update:wallWidth', readNumberInput($event, wallWidth, 0.1))"
           >
         </label>
 
@@ -105,9 +160,12 @@ const formatCabinetSize = (variant: LedVariant | null) => {
           <span class="font-semibold text-neutral-500">Wall Height</span>
           <input
             type="number"
-            value="3"
+            :value="wallHeight"
+            min="0.1"
+            step="0.1"
             class="h-9 w-16 rounded border border-neutral-300 px-2 text-right"
             :disabled="!selectedVariant"
+            @input="emit('update:wallHeight', readNumberInput($event, wallHeight, 0.1))"
           >
         </label>
       </div>
@@ -125,9 +183,12 @@ const formatCabinetSize = (variant: LedVariant | null) => {
           <span class="font-semibold text-neutral-500">Columns</span>
           <input
             type="number"
-            value="1"
+            :value="columns"
+            min="1"
+            step="1"
             class="h-9 w-16 rounded border border-neutral-300 px-2 text-right"
             :disabled="!selectedVariant"
+            @input="emit('update:columns', readIntegerInput($event, columns))"
           >
         </label>
 
@@ -135,19 +196,34 @@ const formatCabinetSize = (variant: LedVariant | null) => {
           <span class="font-semibold text-neutral-500">Rows</span>
           <input
             type="number"
-            value="1"
+            :value="rows"
+            min="1"
+            step="1"
             class="h-9 w-16 rounded border border-neutral-300 px-2 text-right"
             :disabled="!selectedVariant"
+            @input="emit('update:rows', readIntegerInput($event, rows))"
           >
         </label>
 
         <div>
           <p class="mb-2 font-semibold text-neutral-500">Resolution</p>
           <div class="grid grid-cols-2 gap-3">
-            <button type="button" class="h-10 rounded border border-neutral-300" :disabled="!selectedVariant">
+            <button
+              type="button"
+              class="h-10 rounded border border-neutral-300"
+              :class="resolutionMode === 'FHD' ? 'border-blue-600 bg-blue-50 text-blue-700' : ''"
+              :disabled="!selectedVariant"
+              @click="emit('update:resolutionMode', 'FHD')"
+            >
               FHD
             </button>
-            <button type="button" class="h-10 rounded border border-neutral-300" :disabled="!selectedVariant">
+            <button
+              type="button"
+              class="h-10 rounded border border-neutral-300"
+              :class="resolutionMode === 'UHD' ? 'border-blue-600 bg-blue-50 text-blue-700' : ''"
+              :disabled="!selectedVariant"
+              @click="emit('update:resolutionMode', 'UHD')"
+            >
               UHD
             </button>
           </div>
@@ -168,13 +244,28 @@ const formatCabinetSize = (variant: LedVariant | null) => {
           <p class="mb-2 font-semibold text-neutral-500">Redundancy</p>
           <div class="flex items-center justify-between gap-3">
             <label class="flex items-center gap-2">
-              <input type="checkbox" checked :disabled="!selectedVariant">NO
+              <input
+                type="checkbox"
+                :checked="redundancy === 'NO'"
+                :disabled="!selectedVariant"
+                @change="emit('update:redundancy', 'NO')"
+              >NO
             </label>
             <label class="flex items-center gap-2">
-              <input type="checkbox" :disabled="!selectedVariant">POWER
+              <input
+                type="checkbox"
+                :checked="redundancy === 'POWER'"
+                :disabled="!selectedVariant"
+                @change="emit('update:redundancy', 'POWER')"
+              >POWER
             </label>
             <label class="flex items-center gap-2">
-              <input type="checkbox" :disabled="!selectedVariant">DATA
+              <input
+                type="checkbox"
+                :checked="redundancy === 'DATA'"
+                :disabled="!selectedVariant"
+                @change="emit('update:redundancy', 'DATA')"
+              >DATA
             </label>
           </div>
         </div>
@@ -184,29 +275,46 @@ const formatCabinetSize = (variant: LedVariant | null) => {
           <div class="grid grid-cols-2 gap-2">
             <button
               type="button"
-              class="h-16 rounded bg-[linear-gradient(135deg,#111827,#7c3aed,#ef4444)] text-sm font-black text-white"
+              class="relative h-16 overflow-hidden rounded border text-sm font-black text-white"
+              :class="contentMode === 'default' ? 'border-blue-600 ring-2 ring-blue-600' : 'border-transparent'"
               :disabled="!selectedVariant"
+              @click="emit('update:contentMode', 'default')"
             >
-              DEFAULT IMAGE
+              <img :src="previewImageSrc" alt="" class="absolute inset-0 h-full w-full object-cover">
+              <span class="relative">DEFAULT IMAGE</span>
             </button>
             <button
               type="button"
-              class="h-16 rounded bg-[linear-gradient(135deg,#0f172a,#2563eb,#f43f5e)] text-sm font-black text-white"
+              class="relative h-16 overflow-hidden rounded border text-sm font-black text-white"
+              :class="contentMode === 'preview' ? 'border-blue-600 ring-2 ring-blue-600' : 'border-transparent'"
               :disabled="!selectedVariant"
+              @click="emit('update:contentMode', 'preview')"
             >
-              PREVIEW VIDEO
+              <video
+                :src="previewVideoSrc"
+                class="absolute inset-0 h-full w-full object-cover"
+                autoplay
+                loop
+                muted
+                playsinline
+              />
+              <span class="relative">PREVIEW VIDEO</span>
             </button>
             <button
               type="button"
               class="h-10 rounded border border-neutral-300 text-sm"
+              :class="contentMode === 'upload' ? 'border-blue-600 bg-blue-50 text-blue-700' : ''"
               :disabled="!selectedVariant"
+              @click="emit('update:contentMode', 'upload')"
             >
               Upload Image
             </button>
             <button
               type="button"
               class="h-10 rounded border border-neutral-300 text-sm"
+              :class="contentMode === 'none' ? 'border-blue-600 bg-blue-50 text-blue-700' : ''"
               :disabled="!selectedVariant"
+              @click="emit('update:contentMode', 'none')"
             >
               No Image
             </button>

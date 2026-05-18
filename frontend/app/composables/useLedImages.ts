@@ -1,4 +1,4 @@
-const ledImageModules = import.meta.glob("~/assets/leds/**/*", {
+const ledImageModules = import.meta.glob("../../assets/leds/**/*", {
   eager: true,
   import: "default",
 }) as Record<string, string>;
