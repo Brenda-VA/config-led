@@ -1,7 +1,12 @@
+from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from .models import ConfigurationProject, Controller, ProductFamily, ProductVariant
+from .models import ConfigurationProject, Controller, ProductFamily, ProductVariant, UserProfile
 from .services import calculate_project_metrics, user_can_view_prices
+
+
+User = get_user_model()
 
 
 class PriceProtectedSerializerMixin:
@@ -200,3 +205,114 @@ class ConfigurationProjectSerializer(serializers.ModelSerializer):
 
         validated_data.update(calculate_project_metrics(selected_variant, columns, rows))
         return super().update(instance, validated_data)
+
+
+class AuthUserSerializer(serializers.ModelSerializer):
+    # Respuesta publica del usuario autenticado. No incluye password ni datos sensibles.
+    can_view_prices = serializers.SerializerMethodField()
+    company = serializers.SerializerMethodField()
+    country = serializers.SerializerMethodField()
+    phone = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "is_staff",
+            "is_superuser",
+            "can_view_prices",
+            "company",
+            "country",
+            "phone",
+        ]
+
+    def get_can_view_prices(self, user):
+        return user_can_view_prices(user)
+
+    def get_company(self, user):
+        return getattr(getattr(user, "price_profile", None), "company", "")
+
+    def get_country(self, user):
+        return getattr(getattr(user, "price_profile", None), "country", "")
+
+    def get_phone(self, user):
+        return getattr(getattr(user, "price_profile", None), "phone", "")
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate(self, attrs):
+        email = attrs["email"].strip().lower()
+        password = attrs["password"]
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist as exc:
+            raise serializers.ValidationError("Invalid email or password.") from exc
+
+        authenticated_user = authenticate(
+            request=self.context.get("request"),
+            username=user.get_username(),
+            password=password,
+        )
+
+        if authenticated_user is None:
+            raise serializers.ValidationError("Invalid email or password.")
+        if not authenticated_user.is_active:
+            raise serializers.ValidationError("This account is inactive.")
+
+        attrs["user"] = authenticated_user
+        return attrs
+
+
+class RegisterSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+    confirm_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    company = serializers.CharField(max_length=160, required=False, allow_blank=True)
+    country = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=40, required=False, allow_blank=True)
+
+    def validate_email(self, value):
+        email = value.strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return email
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+
+        validate_password(attrs["password"])
+        return attrs
+
+    def create(self, validated_data):
+        profile_data = {
+            "company": validated_data.pop("company", ""),
+            "country": validated_data.pop("country", ""),
+            "phone": validated_data.pop("phone", ""),
+        }
+        validated_data.pop("confirm_password")
+
+        # Default User sigue usando username; lo igualamos al email para poder autenticar limpio.
+        user = User.objects.create_user(
+            username=validated_data["email"],
+            email=validated_data["email"],
+            password=validated_data["password"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+        )
+
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        for field_name, value in profile_data.items():
+            setattr(profile, field_name, value)
+        profile.save(update_fields=["company", "country", "phone"])
+
+        return user

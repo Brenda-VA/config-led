@@ -1,3 +1,12 @@
+<script setup lang="ts">
+const { user, isAuthenticated, pending, logout } = useAuth();
+
+const handleLogout = async () => {
+  await logout();
+  await navigateTo("/products");
+};
+</script>
+
 <template>
   <div class="min-h-screen bg-neutral-100 text-neutral-950">
     <header
@@ -7,7 +16,21 @@
         RGBs Display Configurator
       </NuxtLink>
 
-      <div class="flex items-center gap-3">
+      <div v-if="isAuthenticated" class="flex items-center gap-3">
+        <span class="hidden max-w-44 truncate text-sm font-semibold text-neutral-600 sm:inline">
+          {{ user?.first_name || user?.email }}
+        </span>
+        <button
+          type="button"
+          class="flex h-10 items-center rounded-full border border-neutral-300 px-5 text-sm font-semibold text-neutral-700"
+          :disabled="pending"
+          @click="handleLogout"
+        >
+          {{ pending ? "Signing out..." : "Logout" }}
+        </button>
+      </div>
+
+      <div v-else class="flex items-center gap-3">
         <NuxtLink
           to="/login"
           class="flex h-10 items-center rounded-full border border-blue-600 px-5 text-sm font-semibold text-blue-700"

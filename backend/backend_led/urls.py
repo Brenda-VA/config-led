@@ -19,6 +19,8 @@ from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Auth vive fuera de /api/ para que Nuxt tenga endpoints claros: /auth/login/, /auth/me/, etc.
+    path("auth/", include("products.auth_urls")),
     # Todas las rutas /api/... se delegan a products/urls.py y sus ViewSets.
     path("api/", include("products.urls")),
 ]

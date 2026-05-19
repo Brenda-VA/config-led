@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import AuthInput from "~/components/auth/AuthInput.vue";
 import AuthLayout from "~/components/auth/AuthLayout.vue";
+import { getAuthErrorMessage } from "~/composables/useAuth";
+import type { LoginPayload } from "~/types/auth";
 
 type LoginForm = {
   email: string;
@@ -15,10 +17,25 @@ const loginForm = reactive<LoginForm>({
 });
 
 const loginMessage = ref("");
+const loginError = ref("");
+const { login, pending } = useAuth();
 
-const handleLoginSubmit = () => {
-  // Solo UI por ahora; despues conectamos este submit con Django.
-  loginMessage.value = "Login form ready. Backend connection pending.";
+const handleLoginSubmit = async () => {
+  loginMessage.value = "";
+  loginError.value = "";
+
+  const payload: LoginPayload = {
+    email: loginForm.email,
+    password: loginForm.password,
+  };
+
+  try {
+    await login(payload);
+    loginMessage.value = "Login successful.";
+    await navigateTo("/products");
+  } catch (error) {
+    loginError.value = getAuthErrorMessage(error);
+  }
 };
 </script>
 
@@ -64,13 +81,17 @@ const handleLoginSubmit = () => {
 
       <button
         type="submit"
-        class="h-12 w-full rounded-full bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700"
+        class="h-12 w-full rounded-full bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-neutral-300"
+        :disabled="pending"
       >
-        Sign in
+        {{ pending ? "Signing in..." : "Sign in" }}
       </button>
 
-      <p v-if="loginMessage" class="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700">
+      <p v-if="loginMessage" class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
         {{ loginMessage }}
+      </p>
+      <p v-if="loginError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        {{ loginError }}
       </p>
 
       <p class="text-center text-sm text-neutral-950">

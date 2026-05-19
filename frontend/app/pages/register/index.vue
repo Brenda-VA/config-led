@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import AuthInput from "~/components/auth/AuthInput.vue";
 import AuthLayout from "~/components/auth/AuthLayout.vue";
+import { getAuthErrorMessage } from "~/composables/useAuth";
+import type { RegisterPayload } from "~/types/auth";
 
 type RegisterForm = {
   email: string;
@@ -27,10 +29,36 @@ const registerForm = reactive<RegisterForm>({
 });
 
 const registerMessage = ref("");
+const registerError = ref("");
+const { register, pending } = useAuth();
 
-const handleRegisterSubmit = () => {
-  // Solo UI por ahora; despues conectamos este submit con Django.
-  registerMessage.value = "Register form ready. Backend connection pending.";
+const handleRegisterSubmit = async () => {
+  registerMessage.value = "";
+  registerError.value = "";
+
+  if (!registerForm.acceptsPrivacy) {
+    registerError.value = "You need to accept the Privacy Policy to create an account.";
+    return;
+  }
+
+  const payload: RegisterPayload = {
+    email: registerForm.email,
+    first_name: registerForm.firstName,
+    last_name: registerForm.lastName,
+    password: registerForm.password,
+    confirm_password: registerForm.confirmPassword,
+    company: registerForm.company,
+    country: registerForm.country,
+    phone: registerForm.phone,
+  };
+
+  try {
+    await register(payload);
+    registerMessage.value = "Account created successfully.";
+    await navigateTo("/products");
+  } catch (error) {
+    registerError.value = getAuthErrorMessage(error);
+  }
 };
 </script>
 
@@ -99,7 +127,6 @@ const handleRegisterSubmit = () => {
         label="Company"
         placeholder="Please enter your company name"
         autocomplete="organization"
-        required
       />
 
       <label for="register-country" class="block text-sm font-medium text-neutral-950">
@@ -136,13 +163,17 @@ const handleRegisterSubmit = () => {
 
       <button
         type="submit"
-        class="mt-3 h-12 w-full rounded-full bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700"
+        class="mt-3 h-12 w-full rounded-full bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:bg-neutral-300"
+        :disabled="pending"
       >
-        Register
+        {{ pending ? "Creating account..." : "Register" }}
       </button>
 
-      <p v-if="registerMessage" class="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700">
+      <p v-if="registerMessage" class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
         {{ registerMessage }}
+      </p>
+      <p v-if="registerError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        {{ registerError }}
       </p>
     </form>
   </AuthLayout>

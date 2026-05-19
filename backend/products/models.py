@@ -238,6 +238,9 @@ class UserProfile(models.Model):
         on_delete=models.CASCADE,
     )
     can_view_prices = models.BooleanField(default=False)
+    company = models.CharField(max_length=160, blank=True)
+    country = models.CharField(max_length=80, blank=True)
+    phone = models.CharField(max_length=40, blank=True)
 
     def __str__(self):
         return f"{self.user} price permissions"

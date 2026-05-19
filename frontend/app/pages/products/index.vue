@@ -18,6 +18,7 @@ import type {
 
 const { getLedModels, getControllers, saveProject } = useLedApi();
 const { resolveLedImage } = useLedImages();
+const { isAuthenticated } = useAuth();
 
 // Esta pagina es la dueña del estado: sidebar, preview y specs leen de aqui.
 const { data: ledModels, pending, error } = await getLedModels();
@@ -154,6 +155,13 @@ const handleExportPdfClick = async () => {
   if (!payload) {
     saveStatus.value = "error";
     saveMessage.value = "Selecciona un modelo y una variante antes de guardar.";
+    return;
+  }
+
+  // Si el usuario no esta autenticado, el backend bloqueara igualmente el guardado.
+  if (!isAuthenticated.value) {
+    saveStatus.value = "error";
+    saveMessage.value = "Debes iniciar sesión para guardar el proyecto.";
     return;
   }
 

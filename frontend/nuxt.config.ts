@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: "http://127.0.0.1:8000/api",
+      authBase: "http://127.0.0.1:8000/auth",
     },
   },
   compatibilityDate: "2025-07-15",
